@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>Handwritten digit recognition App - By Jeffery Osagie</title>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE-edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" href="./resources/css/style.css">
+    </head>
+
+    <body>
+
+        <h1>TensorFlow.js handwritten digit classifier </h1>
+    
+        <p>This model was trained with the MNIST database.</p>
+
+        
+    
+        <section class="box">
+    
+          <h2>Draw Number</h2>
+    
+          <p>Draw any number bewteen 0 and 9 in the box below and click the predict button!</p>
+    
+          <canvas id="canvas" width="200" height="200"></canvas>
+            <img width="200" height="200" class='myImg' />
+            <p id="prediction">Training model. Please wait before clicking the predict button...</p>
+
+        </section>
+
+        <section class="box">
+    
+          <h2>Prediction</h2>
+    
+          <p>Below you see what number the trained TensorFlow.js model has predicted from the input hand-drawn image.</p>
+    
+    
+          <p class='correct'></p>
+    
+        </section>
+        <div class='button'>
+          <button class='myBtn'>Predict</button>
+
+        </div>
+
+    
+        <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.11.0/dist/tf.min.js" type="text/javascript"></script>
+
+
+ 
+ <!-- Import the page's JavaScript to do some stuff -->
+ <script type='module' src="./resources/script/script.js" defer></script>
+
+    </body>
+</html>
