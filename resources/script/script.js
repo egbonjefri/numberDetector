@@ -9,7 +9,7 @@ let touch
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 let coord = { x: 0, y: 0 };
-let normalize
+let normal
 canvas.addEventListener("mousedown", start);
 canvas.addEventListener("touchstart", start);
 canvas.addEventListener("touchend", stop);
@@ -76,23 +76,25 @@ button.addEventListener('click', ()=>{
   let imageTensor = tf.browser.fromPixels(image);
   let croppedTensor = tf.slice(imageTensor,[-5,-5,0],[60,60,3])
   let resizedTensor = tf.image.resizeBilinear(croppedTensor,[28,28],true);
-  let resizedInt = resizedTensor.toInt()
-  let grayScale = resizedInt.mean(2);
-  let grayFloat = grayScale.toFloat();
-  let grayDims = grayFloat.expandDims(-1);
-  let grayTen = grayDims.toInt();
+  function rgbToGrayScale(resizedTensor){
 
- // tf.browser.toPixels(resizedInt, canvas)
-  normalize = grayTen.reshape([-1]);
+ const grayScaleTensor = tf.tidy(()=>{
+    const rChannel = resizedTensor.slice([0,0,0],[-1,28,1]);
+    const gChannel = resizedTensor.slice([0,0,1],[-1,28,1]);
+    const bChannel = resizedTensor.slice([0,0,2],[-1,28,1]);
+    const grayScale = rChannel.mul(0.2989).add(gChannel.mul(0.5870)).add(bChannel.mul(0.1140))
+   
+    return grayScale
+  })
+  const normalizedGrayScaleTensor = grayScaleTensor.div(255.0);
+  grayScaleTensor.dispose()
+  return normalizedGrayScaleTensor
+}
+normal = rgbToGrayScale(resizedTensor)
+ // tf.browser.toPixels(normal, canvas)
   imageTensor.dispose();
   croppedTensor.dispose();
   resizedTensor.dispose();
-  tf.dispose(grayScale);
-  grayFloat.dispose();
-  grayDims.dispose();
-  grayTen.dispose();
-  resizedInt.dispose()
-
  evaluate()
 
 })
@@ -115,6 +117,10 @@ tf.util.shuffleCombo(INPUTS, OUTPUTS);
 // Input feature Array is 2 dimensional, each element represent an image and each pixel
 // is an array 0f 784 values representing 0 - 255 possible values in a 28 x 28 picture.
 
+
+
+// Input feature Array is 2 dimensional.
+
 const INPUTS_TENSOR = tf.tensor2d(INPUTS);
 
 
@@ -126,7 +132,7 @@ outputTensor.dispose()
 
 
 try{
-  model = await tf.loadLayersModel('localstorage://numberDetector');
+  model = await tf.loadLayersModel('localstorage://cnn_NumberDetector');
  PREDICTION_ELEMENT.innerText = 'Model Loaded';
  button.disabled = false
 
@@ -135,7 +141,142 @@ catch(e){
  train()
 }
 
-async function train() { 
+async function train(){
+
+// Now actually create and define model architecture.
+ model = tf.sequential();
+
+
+model.add(tf.layers.conv2d({
+
+  inputShape: [28, 28, 1],
+
+  filters: 32,
+
+  kernelSize: 5, // Square Filter of 3 by 3. Could also specify rectangle eg [2, 3].
+
+  strides: 1,
+
+  padding: 'same',
+
+  activation: 'relu',
+
+  kernelInitializer: 'varianceScaling'
+
+}));
+
+
+model.add(tf.layers.maxPooling2d({poolSize: 2, strides: 2}));
+
+model.add(tf.layers.conv2d({
+
+  filters: 64,
+
+  kernelSize: 5,
+
+  strides: 1,
+
+  padding: 'same',
+
+  activation: 'relu',
+  kernelInitializer: 'varianceScaling'
+
+
+}));
+
+
+model.add(tf.layers.maxPooling2d({poolSize: 2, strides: 2}));
+
+
+//It is common practice to flatten the output from the 2d filters into a 1d vector
+//before feeding into the last layer
+model.add(tf.layers.flatten());
+
+
+model.add(tf.layers.dense({units: 64, activation: 'relu'}));
+
+
+model.add(tf.layers.dense({units: 10, kernelInitializer: 'varianceScaling', activation: 'softmax'}));
+model.compile({
+
+  optimizer: tf.train.adam(), // Adam changes the learning rate over time which is useful.
+
+  loss: 'categoricalCrossentropy', // As this is a classification problem, dont use MSE.
+
+  metrics: ['accuracy'] 
+
+});
+
+
+const RESHAPED_INPUTS = INPUTS_TENSOR.reshape([INPUTS.length, 28, 28, 1]);
+
+let results = await model.fit(RESHAPED_INPUTS, OUTPUTS_TENSOR, {
+
+  shuffle: true,        // Ensure data is shuffled again before using each time.
+
+  validationSplit: 0.15,  
+
+  epochs: 30,           // Go over the data 30 times!
+
+  batchSize: 256
+});
+
+RESHAPED_INPUTS.dispose();
+
+OUTPUTS_TENSOR.dispose();
+
+INPUTS_TENSOR.dispose();
+
+model.summary();
+PREDICTION_ELEMENT.innerText = 'Model Trained';
+button.disabled = false
+  
+}
+
+
+
+
+
+let x
+  function evaluate() {
+
+    async function saveModel () {
+      await model.save('localstorage://cnn_NumberDetector');
+    }
+    saveModel()
+  
+    let answer = tf.tidy(function() {
+      let newInput = normal.expandDims()
+
+      let output = model.predict(newInput);
+      const values = output.squeeze().dataSync();
+      x = Array.from(values);
+      output.print()
+      return output.squeeze().argMax();    
+  
+    });
+  
+    answer.array().then(function(index) {
+      if(Math.max(...x) > 0.8){
+      correct.innerText = index;
+      PREDICTION_ELEMENT.innerText = 'Model Loaded'
+      }
+      else{
+        PREDICTION_ELEMENT.innerText = 'Can\'t make any predictions right now';
+
+      }
+      answer.dispose()
+      normal.dispose()
+      console.log(tf.memory().numTensors)
+    });
+  
+  
+  }
+
+
+
+//For Multi-layer perceptron training
+  /*async function train() { 
 // Now actually create and define model architecture.
 model = tf.sequential();
 
@@ -179,45 +320,4 @@ model.summary();
     PREDICTION_ELEMENT.innerText = 'Training complete';
     button.disabled = false
 
-  }
-let x
-  function evaluate() {
-
-  
-   
-  
-    let answer = tf.tidy(function() {
-  
-      let newInput = normalize.expandDims();
-      
-      
-  
-      let output = model.predict(newInput);
-  
-      const values = output.squeeze().dataSync();
-      x = Array.from(values);
-      
-      return output.squeeze().argMax();    
-  
-    });
-  
-    answer.array().then(function(index) {
-      if(Math.max(...x) > 0.8){
-      correct.innerText = index;
-      PREDICTION_ELEMENT.innerText = 'Model Loaded'
-      }
-      else{
-        PREDICTION_ELEMENT.innerText = 'Can\'t make any predictions right now';
-
-      }
-      answer.dispose()
-      normalize.dispose();
-      async function saveModel () {
-        await model.save('localstorage://numberDetector');
-      }
-      saveModel()
-      console.log(tf.memory().numTensors)
-    });
-  
-  
-  }
+  }*/
