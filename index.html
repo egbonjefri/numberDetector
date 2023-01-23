@@ -10,9 +10,9 @@
 
     <body>
 
-        <h1>TensorFlow.js handwritten digit classifier </h1>
+        <h1 class='center'>TensorFlow.js handwritten digit classifier </h1>
     
-        <p>This model was trained with the MNIST database.</p>
+        <p class='center'>This model was trained with  Google TeachbleMachine and the MNIST database.</p>
 
         
     
@@ -22,8 +22,9 @@
     
           <p>Draw any number bewteen 0 and 9 in the box below and click the predict button!</p>
     
-          <canvas id="canvas" width="200" height="200"></canvas>
-            <img width="200" height="200" class='myImg' />
+          <canvas id="canvas" ></canvas>
+
+            <img width="28" height="28" class='myImg' />
             <p id="prediction">Training model. Please wait for the model to finsih training before clicking the predict button...</p>
 
         </section>
@@ -45,7 +46,7 @@
 
     
         <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.11.0/dist/tf.min.js" type="text/javascript"></script>
-
+        <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8/dist/teachablemachine-image.min.js"></script>
 
  
  <!-- Import the page's JavaScript to do some stuff -->

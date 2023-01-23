@@ -15,18 +15,17 @@ body {
     color: #FF6F00;
   
   }
-  
+  .center {
+    text-align: center;
+  }
   
   canvas {
   
     display: block;
-  
-    width: 128px;
-    height: 128px;
+    padding: 0;
     background-color: black;
-    margin: 10px auto 5px auto;
-    border: solid 1px black
-  
+    border: solid 1px black;
+    margin: 0 auto
   }
   
   p#prediction {
@@ -80,9 +79,13 @@ body {
   .myImg{
       background-color: black;
       display: block;
-      margin: 0 auto;
+      margin: 1rem auto;
+      padding: 1rem 3rem;
+     height: 28px;
+     width: 28px
   }
   .myBtn{
     display: block;
     margin: 0 auto;
   }
+  
